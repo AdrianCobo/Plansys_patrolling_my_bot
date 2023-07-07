@@ -35,8 +35,8 @@ class MoveAction : public plansys2::ActionExecutorClient {
         geometry_msgs::msg::PoseStamped wp;
         wp.header.frame_id = "map";
         wp.header.stamp = now();
-        wp.pose.position.x = 3.70;
-        wp.pose.position.y = 0.91;
+        wp.pose.position.x = 3.77;
+        wp.pose.position.y = 0.39;
         wp.pose.position.z = 0.0;
         wp.pose.orientation.x = 0.0;
         wp.pose.orientation.y = 0.0;
@@ -44,20 +44,20 @@ class MoveAction : public plansys2::ActionExecutorClient {
         wp.pose.orientation.w = 1.0;
         waypoints_["wp1"] = wp;
 
-        wp.pose.position.x = -0.04;
-        wp.pose.position.y = 4.49;
+        wp.pose.position.x = 1.14;
+        wp.pose.position.y = -4.43;
         waypoints_["wp2"] = wp;
 
-        wp.pose.position.x = 0.33;
-        wp.pose.position.y = 2.088;
+        wp.pose.position.x = -0.68;
+        wp.pose.position.y = -10.67;
         waypoints_["wp3"] = wp;
 
-        wp.pose.position.x = 0.01;
-        wp.pose.position.y = 2.68;
+        wp.pose.position.x = -5.08;
+        wp.pose.position.y = -7.95;
         waypoints_["wp4"] = wp;
 
-        wp.pose.position.x = -1.14;
-        wp.pose.position.y = 3.00;
+        wp.pose.position.x = -1.91;
+        wp.pose.position.y = 0.42;
         waypoints_["wp_control"] = wp;
 
         using namespace std::placeholders;
