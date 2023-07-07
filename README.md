@@ -5,9 +5,7 @@ Based on [the project](https://github.com/PlanSys2/ros2_planning_system_examples
 ## Instalation
 
 1. Follow the installation at [my_bot repo](https://github.com/AdrianCobo/my_bot)
-2.
-
----
+2. 
 
 ```console
     sudo apt-get install ros-humble-plansys2-*
@@ -17,11 +15,7 @@ Based on [the project](https://github.com/PlanSys2/ros2_planning_system_examples
     colcon build --symlink-install
 ```
 
----
-
 ## Run Gazebo Example
-
----
 
 ```console
     ros2 launch my_bot launch_sim.launch.py
@@ -34,7 +28,5 @@ Based on [the project](https://github.com/PlanSys2/ros2_planning_system_examples
     ros2 launch patrolling patrol_example_launch.py
     ros2 run patrolling patrolling_controller_node
 ```
-
----
 
 You can see the video demonstration here: [(Youtube)](https://youtu.be/MbuiRqzs0qQ)
