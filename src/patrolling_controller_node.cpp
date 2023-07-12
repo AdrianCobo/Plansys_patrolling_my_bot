@@ -15,9 +15,13 @@
 #include <plansys2_pddl_parser/Utils.h>
 
 #include <memory>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/opencv.hpp>
 
 #include "plansys2_msgs/msg/action_execution_info.hpp"
 #include "plansys2_msgs/msg/plan.hpp"
+#include "cv_bridge/cv_bridge.h"
 
 #include "plansys2_domain_expert/DomainExpertClient.hpp"
 #include "plansys2_executor/ExecutorClient.hpp"
@@ -31,7 +35,7 @@ class PatrollingController : public rclcpp::Node
 {
 public:
   PatrollingController()
-  : rclcpp::Node("patrolling_controller"), state_(STARTING)
+  : rclcpp::Node("patrolling_controller"), state_(STARTING), new_state_(PATROL_WP1)
   {
   }
 
@@ -42,6 +46,7 @@ public:
     problem_expert_ = std::make_shared<plansys2::ProblemExpertClient>();
     executor_client_ = std::make_shared<plansys2::ExecutorClient>();
     init_knowledge();
+    cv::namedWindow("control panel", cv::WINDOW_AUTOSIZE);
   }
 
   void init_knowledge()
@@ -58,19 +63,65 @@ public:
     problem_expert_->addPredicate(plansys2::Predicate("(connected wp1 wp_control)"));
     problem_expert_->addPredicate(plansys2::Predicate("(connected wp_control wp2)"));
     problem_expert_->addPredicate(plansys2::Predicate("(connected wp2 wp_control)"));
-    problem_expert_->addPredicate(plansys2::Predicate("(connected wp_control wp3)"));
-    problem_expert_->addPredicate(plansys2::Predicate("(connected wp3 wp_control)"));
+    problem_expert_->addPredicate(plansys2::Predicate("(connected wp2 wp3)"));
+    problem_expert_->addPredicate(plansys2::Predicate("(connected wp3 wp2)"));
+    problem_expert_->addPredicate(plansys2::Predicate("(connected wp3 wp4)"));
+    problem_expert_->addPredicate(plansys2::Predicate("(connected wp4 wp3)"));
     problem_expert_->addPredicate(plansys2::Predicate("(connected wp_control wp4)"));
     problem_expert_->addPredicate(plansys2::Predicate("(connected wp4 wp_control)"));
   }
 
+  int read_key_pressed()
+  {
+    int key_pressed;
+    StateType new_state;
+    // wait new image format during 100ms
+    //cv::imshow("R2D2 control panel", null);
+    key_pressed = cv::waitKey(100);
+
+    if(key_pressed == -1){
+      return -1;
+    }
+
+    // change the image format if it is necessary
+    
+    switch (key_pressed) {
+      case '0':
+        new_state = STARTING;
+        break;
+      case '1':
+        new_state = PATROL_WP1;
+        break;
+      case '2':
+        new_state = PATROL_WP2;
+        break;
+      case '3':
+        new_state = PATROL_WP3;
+        break;
+      case '4':
+        new_state = PATROL_WP4;
+        break;
+    }
+    std::cout << new_state << std::endl;
+    return new_state;
+  }
+
   void step()
   {
+    int key = read_key_pressed();
+    if(key!=-1){
+      new_state_ = (StateType)key;
+    }
+    std::cout << "state: " << state_ << std::endl;
+    std::cout << "state: " << new_state_ << std::endl;
+
     switch (state_) {
       case STARTING:
         {
           // Set the goal for next state
-          problem_expert_->setGoal(plansys2::Goal("(and(patrolled wp1))"));
+          goal_wp_ = "(patrolled wp1)";
+          std::string goal = "(and" + goal_wp_ + ")";
+          problem_expert_->setGoal(plansys2::Goal(goal));
 
           // Compute the plan
           auto domain = domain_expert_->getDomain();
@@ -88,7 +139,8 @@ public:
             state_ = PATROL_WP1;
           }
         }
-        break;
+        break;    
+
       case PATROL_WP1:
         {
           auto feedback = executor_client_->getFeedBack();
@@ -104,10 +156,12 @@ public:
               std::cout << "Successful finished " << std::endl;
 
               // Cleanning up
-              problem_expert_->removePredicate(plansys2::Predicate("(patrolled wp1)"));
+              problem_expert_->removePredicate(plansys2::Predicate(goal_wp_));
 
               // Set the goal for next state
-              problem_expert_->setGoal(plansys2::Goal("(and(patrolled wp2))"));
+              goal_wp_ = "(patrolled wp1)";
+              std::string goal = "(and" + goal_wp_ + ")";
+              problem_expert_->setGoal(plansys2::Goal(goal));
 
               // Compute the plan
               auto domain = domain_expert_->getDomain();
@@ -122,7 +176,7 @@ public:
 
               // Execute the plan
               if (executor_client_->start_plan_execution(plan.value())) {
-                state_ = PATROL_WP2;
+                state_ = new_state_;
               }
             } else {
               for (const auto & action_feedback : feedback.action_execution_status) {
@@ -164,10 +218,12 @@ public:
               std::cout << "Successful finished " << std::endl;
 
               // Cleanning up
-              problem_expert_->removePredicate(plansys2::Predicate("(patrolled wp2)"));
+              problem_expert_->removePredicate(plansys2::Predicate(goal_wp_));
 
               // Set the goal for next state
-              problem_expert_->setGoal(plansys2::Goal("(and(patrolled wp3))"));
+              goal_wp_ = "(patrolled wp2)";
+              std::string goal = "(and" + goal_wp_ + ")";
+              problem_expert_->setGoal(plansys2::Goal(goal));
 
               // Compute the plan
               auto domain = domain_expert_->getDomain();
@@ -182,7 +238,7 @@ public:
 
               // Execute the plan
               if (executor_client_->start_plan_execution(plan.value())) {
-                state_ = PATROL_WP3;
+                state_ = new_state_;
               }
             } else {
               for (const auto & action_feedback : feedback.action_execution_status) {
@@ -224,10 +280,12 @@ public:
               std::cout << "Successful finished " << std::endl;
 
               // Cleanning up
-              problem_expert_->removePredicate(plansys2::Predicate("(patrolled wp3)"));
+              problem_expert_->removePredicate(plansys2::Predicate(goal_wp_));
 
               // Set the goal for next state
-              problem_expert_->setGoal(plansys2::Goal("(and(patrolled wp4))"));
+              goal_wp_ = "(patrolled wp3)";
+              std::string goal = "(and" + goal_wp_ + ")";
+              problem_expert_->setGoal(plansys2::Goal(goal));
 
               // Compute the plan
               auto domain = domain_expert_->getDomain();
@@ -242,7 +300,7 @@ public:
 
               // Execute the plan
               if (executor_client_->start_plan_execution(plan.value())) {
-                state_ = PATROL_WP4;
+                state_ = new_state_;
               }
             } else {
               for (const auto & action_feedback : feedback.action_execution_status) {
@@ -284,10 +342,12 @@ public:
               std::cout << "Successful finished " << std::endl;
 
               // Cleanning up
-              problem_expert_->removePredicate(plansys2::Predicate("(patrolled wp4)"));
+              problem_expert_->removePredicate(plansys2::Predicate(goal_wp_));
 
               // Set the goal for next state
-              problem_expert_->setGoal(plansys2::Goal("(and(patrolled wp1))"));
+              goal_wp_ = "(patrolled wp4)";
+              std::string goal = "(and" + goal_wp_ + ")";
+              problem_expert_->setGoal(plansys2::Goal(goal));
 
               // Compute the plan
               auto domain = domain_expert_->getDomain();
@@ -302,8 +362,7 @@ public:
 
               // Execute the plan
               if (executor_client_->start_plan_execution(plan.value())) {
-                // Loop to WP1
-                state_ = PATROL_WP1;
+                state_ = new_state_;
               }
             } else {
               for (const auto & action_feedback : feedback.action_execution_status) {
@@ -337,7 +396,8 @@ public:
 
 private:
   typedef enum {STARTING, PATROL_WP1, PATROL_WP2, PATROL_WP3, PATROL_WP4} StateType;
-  StateType state_;
+  StateType state_, new_state_;
+  std::string goal_wp_;
 
   std::shared_ptr<plansys2::DomainExpertClient> domain_expert_;
   std::shared_ptr<plansys2::PlannerClient> planner_client_;
@@ -352,7 +412,7 @@ int main(int argc, char ** argv)
 
   node->init();
 
-  rclcpp::Rate rate(5);
+  rclcpp::Rate rate(20);
   while (rclcpp::ok()) {
     node->step();
 
