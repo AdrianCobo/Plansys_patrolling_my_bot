@@ -30,3 +30,5 @@ Based on [the project](https://github.com/PlanSys2/ros2_planning_system_examples
 ```
 
 You can see the video demonstration here: [(Youtube)](https://youtu.be/MbuiRqzs0qQ)
+
+[![Alt text](https://img.youtube.com/vi/MbuiRqzs0qQ/0.jpg)](https://www.youtube.com/watch?v=Q_-EYw8jdps)
